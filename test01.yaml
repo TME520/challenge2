@@ -160,7 +160,7 @@ Resources:
             01_get_html_file:
               command: 'df -h'
     Properties:
-      SubnetId: !Ref PrivateSubnet1
+      # SubnetId: !Ref PrivateSubnet1
       ImageId: !FindInMap 
         - AWSRegionArch2AMI
         - !Ref 'AWS::Region'
@@ -169,7 +169,7 @@ Resources:
           - !Ref InstanceType
           - Arch
       InstanceType: !Ref InstanceType
-      SecurityGroups:
+      SecurityGroupIds:
         - !Ref WebServerSecurityGroup
       KeyName: !Ref KeyName
       UserData: !Base64 
@@ -199,9 +199,6 @@ Resources:
             - '         --region '
             - !Ref 'AWS::Region'
             - |+
-      CreationPolicy:
-        ResourceSignal:
-          Timeout: PT5M
   WebServerSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
