@@ -143,6 +143,19 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTable1
       SubnetId: !Ref PrivateSubnet1
+  WebServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable HTTP access via port 80
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
   WebServerInstance:
     Type: 'AWS::EC2::Instance'
     Metadata:
@@ -155,12 +168,62 @@ Resources:
           packages:
             yum:
               httpd: []
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content: !Join 
+                - ''
+                - - |
+                    [main]
+                  - stack=
+                  - !Ref 'AWS::StackId'
+                  - |+
+
+                  - region=
+                  - !Ref 'AWS::Region'
+                  - |+
+
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Join 
+                - ''
+                - - |
+                    [cfn-auto-reloader-hook]
+                  - |
+                    triggers=post.update
+                  - >
+                    path=Resources.WebServerInstance.Metadata.AWS::CloudFormation::Init
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - '         --stack '
+                  - !Ref 'AWS::StackName'
+                  - '         --resource WebServerInstance '
+                  - '         --configsets InstallAndRun '
+                  - '         --region '
+                  - !Ref 'AWS::Region'
+                  - |+
+
+                  - |
+                    runas=root
+              mode: '000400'
+              owner: root
+              group: root
+          services:
+            httpd:
+              enabled: 'true'
+              ensureRunning: 'true'
+            cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
         Configure:
           commands:
             01_get_html_file:
               command: 'df -h'
     Properties:
-      # SubnetId: !Ref PrivateSubnet1
+      SubnetId: !Ref PrivateSubnet1
       ImageId: !FindInMap 
         - AWSRegionArch2AMI
         - !Ref 'AWS::Region'
@@ -169,8 +232,7 @@ Resources:
           - !Ref InstanceType
           - Arch
       InstanceType: !Ref InstanceType
-      SecurityGroupIds:
-        - !Ref WebServerSecurityGroup
+      SecurityGroupIds: !GetAtt WebServerSecurityGroup.GroupId
       KeyName: !Ref KeyName
       UserData: !Base64 
         'Fn::Join':
@@ -199,19 +261,7 @@ Resources:
             - '         --region '
             - !Ref 'AWS::Region'
             - |+
-  WebServerSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Enable HTTP access via port 80
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
-          CidrIp: !Ref SSHLocation
+
 Outputs: 
   VPC: 
     Description: A reference to the created VPC
