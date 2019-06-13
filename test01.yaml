@@ -147,6 +147,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable HTTP access via port 80
+      VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '80'
@@ -232,7 +233,8 @@ Resources:
           - !Ref InstanceType
           - Arch
       InstanceType: !Ref InstanceType
-      SecurityGroupIds: !GetAtt WebServerSecurityGroup.GroupId
+      SecurityGroupIds:
+        - !GetAtt WebServerSecurityGroup.GroupId
       KeyName: !Ref KeyName
       UserData: !Base64 
         'Fn::Join':
