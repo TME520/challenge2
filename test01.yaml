@@ -222,7 +222,7 @@ Resources:
         Configure:
           commands:
             01_get_html_file:
-              command: 'df -h'
+              command: 'curl -L -O https://challenge2-assets.s3-ap-southeast-2.amazonaws.com/belong-test.html'
     Properties:
       SubnetId: !Ref PrivateSubnet1
       ImageId: !FindInMap 
